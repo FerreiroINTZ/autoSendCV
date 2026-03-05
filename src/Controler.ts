@@ -31,10 +31,12 @@ class Controler{
         this.#iaSDK = Configurator.instantiateGoogleGenAI(data.userConfigs.aiKey)
     }
 
+    // acessa o site
     async getWebSite(){
         await this.#driver.get(this.#configs.url!.href)
     }
 
+    // manda a ia pegar as informacoes importantes
     async asAiForGetDescDetais(descText: string){
         const resp = await this.#iaSDK.models.generateContent({
             model: "gemini-3-flash-preview",
@@ -48,6 +50,7 @@ class Controler{
         console.log(resp.text)
     }
 
+    // pega o texto da descricao; e joga na IA para analisar
     async getDescriptionsInfos(){
         const descriptionTag = this.#driver.findElement(By.xpath(this.#elements.vacancyDescriptionTag))
         const descText = await descriptionTag.getText()
@@ -59,9 +62,11 @@ class Controler{
         return [descText, requisitos]
     }
 
+    // new name: "start to get vacancies"
     async getBasicInfos(){
-        // pega a lista
+        // pega a lista <ul>
         const lista = await this.#driver.findElement(By.xpath(this.#elements.lista))
+
         // <li>s
         const elements = await lista.findElements(By.css(":scope > *"))
         
@@ -118,7 +123,7 @@ class Controler{
         console.log("\x1b[32m ==========================")
         const conn = await this.#databaseConnection.connect()
         // await this.#databaseConnection.connect()
-        await conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma) VALUES ($1, $2, $3, $4, $5)", [data.title, data.empresa, data.regiao, data.keywords, data.site])
+        await conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma, jobid, link) VALUES ($1, $2, $3, $4, $5, $6, $7)", [data.title, data.empresa, data.regiao, data.keywords, data.site, data.jobId])
         conn.release()
     }
 

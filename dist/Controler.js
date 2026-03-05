@@ -48,11 +48,13 @@ class Controler {
         __classPrivateFieldSet(this, _Controler_elements, ControlerConfigurator_1.default.setElementsTag(data.userConfigs.site), "f");
         __classPrivateFieldSet(this, _Controler_iaSDK, ControlerConfigurator_1.default.instantiateGoogleGenAI(data.userConfigs.aiKey), "f");
     }
+    // acessa o site
     getWebSite() {
         return __awaiter(this, void 0, void 0, function* () {
             yield __classPrivateFieldGet(this, _Controler_driver, "f").get(__classPrivateFieldGet(this, _Controler_configs, "f").url.href);
         });
     }
+    // manda a ia pegar as informacoes importantes
     asAiForGetDescDetais(descText) {
         return __awaiter(this, void 0, void 0, function* () {
             const resp = yield __classPrivateFieldGet(this, _Controler_iaSDK, "f").models.generateContent({
@@ -67,6 +69,7 @@ class Controler {
             console.log(resp.text);
         });
     }
+    // pega o texto da descricao; e joga na IA para analisar
     getDescriptionsInfos() {
         return __awaiter(this, void 0, void 0, function* () {
             const descriptionTag = __classPrivateFieldGet(this, _Controler_driver, "f").findElement(selenium_webdriver_1.By.xpath(__classPrivateFieldGet(this, _Controler_elements, "f").vacancyDescriptionTag));
@@ -77,11 +80,12 @@ class Controler {
             return [descText, requisitos];
         });
     }
+    // new name: "start to get vacancies"
     getBasicInfos() {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, e_1, _b, _c;
             var _d;
-            // pega a lista
+            // pega a lista <ul>
             const lista = yield __classPrivateFieldGet(this, _Controler_driver, "f").findElement(selenium_webdriver_1.By.xpath(__classPrivateFieldGet(this, _Controler_elements, "f").lista));
             // <li>s
             const elements = yield lista.findElements(selenium_webdriver_1.By.css(":scope > *"));
@@ -144,7 +148,7 @@ class Controler {
             console.log("\x1b[32m ==========================");
             const conn = yield __classPrivateFieldGet(this, _Controler_databaseConnection, "f").connect();
             // await this.#databaseConnection.connect()
-            yield conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma) VALUES ($1, $2, $3, $4, $5)", [data.title, data.empresa, data.regiao, data.keywords, data.site]);
+            yield conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma, jobid, link) VALUES ($1, $2, $3, $4, $5, $6, $7)", [data.title, data.empresa, data.regiao, data.keywords, data.site, data.jobId]);
             conn.release();
         });
     }
