@@ -9,6 +9,7 @@ declare class Controler {
     getWebSite(): Promise<void>;
     asAiForGetDescDetais(descText: string): Promise<void>;
     getDescriptionsInfos(): Promise<any[]>;
+    getANDTranformPublishedDate(): Promise<Date>;
     getBasicInfos(): Promise<void>;
     saveVacancyOnDataBase(data: any): Promise<void>;
     getProperties(): void;

@@ -7,7 +7,7 @@ import {
     Elements, 
     DescriptionSchemaParsed
 } from "./types$schemas"
-import {By} from "selenium-webdriver"
+import {By, until} from "selenium-webdriver"
 import {Pool} from "pg"
 
 class Controler{
@@ -34,6 +34,7 @@ class Controler{
     // acessa o site
     async getWebSite(){
         await this.#driver.get(this.#configs.url!.href)
+        this.#driver.sleep(6000)
     }
 
     // manda a ia pegar as informacoes importantes
@@ -52,6 +53,9 @@ class Controler{
 
     // pega o texto da descricao; e joga na IA para analisar
     async getDescriptionsInfos(){
+
+        // colocar um wait para a tag ul, aqui
+        
         const descriptionTag = this.#driver.findElement(By.xpath(this.#elements.vacancyDescriptionTag))
         const descText = await descriptionTag.getText()
         // console.log(descText)
@@ -61,11 +65,64 @@ class Controler{
 
         return [descText, requisitos]
     }
+    
+    // relacionado a data de publicacao
+    async getANDTranformPublishedDate(): Promise<Date>{
+        
+        function transformaTimeInDays(number: number, time: string){
+
+            let newTime = time
+
+            // se o numero for mais q 1 ele sera plural
+            // entao devemos padronizar para o sinngular
+            if(number > 1){
+                let qtd_slice = 1
+                if(time == "meses"){
+                    qtd_slice = 2
+                }
+                newTime = newTime.slice(0, newTime.length - qtd_slice)
+            }
+
+            let qtd_dias;
+
+            switch(newTime){
+                case "dia":
+                    qtd_dias = number
+                break
+                case "semana":
+                    qtd_dias = number * 7
+                break
+                case "mes":
+                    qtd_dias = number * 30
+                break
+                default:
+                    qtd_dias = 0
+            }
+
+            const currentDate = new Date()
+            const pastDate = new Date(currentDate.setDate(currentDate.getDate() - Number(qtd_dias)))
+            newTime = `${pastDate.getFullYear()}-${pastDate.getMonth() + 1}-${pastDate.getDate()}`
+
+            return newTime
+            
+        }
+        
+        const span = await this.#driver.wait(until.elementLocated(By.xpath('//*[@id="main"]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[1]/div/div[1]/div/div[1]/div/div[3]/div/span')))
+        const allSpanText = await span.getText()
+        const {groups} = allSpanText.match(/há (?<number>\d) (?<word>\w+)/)
+        const text = groups.word
+        const {number} = groups
+
+        const published_date = new Date(transformaTimeInDays(number, text))
+
+        return published_date
+    }
 
     // new name: "start to get vacancies"
     async getBasicInfos(){
         // pega a lista <ul>
-        const lista = await this.#driver.findElement(By.xpath(this.#elements.lista))
+        const lista = await this.#driver.wait(until.elementLocated(By.xpath(this.#elements.lista)), 5000)
+        // const lista = await this.#driver.findElement(By.xpath(this.#elements.lista))
 
         // <li>s
         const elements = await lista.findElements(By.css(":scope > *"))
@@ -77,27 +134,38 @@ class Controler{
             const slw = await item.findElements(By.css(":scope > div > div > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div"))
             console.log(slw.length)
 
-            let title = await slw[0].getText()
-            title = title.split("\n")[0]
-            console.log(title)
-            const {rows} = await this.#databaseConnection.query("SELECT titulo FROM vagas WHERE titulo = $1", [title])
+            const currentUrl = await this.#driver.getCurrentUrl()
+            const url = new URL(currentUrl)
+            const jobId = url.searchParams.get("currentJobId")
+            console.log(`\x1b[33m ${jobId} \x1b[30m`)
+            const {rows} = await this.#databaseConnection.query("SELECT jobid FROM vagas WHERE jobid = $1", [jobId])
             console.log(rows)
-
+            
             // se o titulo ja existir passa pro proximo
             if(rows.length){
-                if(rows[0]?.titulo == title)
+                if(rows[0]?.jobid == jobId)
                 continue
             }
 
             
+            let title = await slw[0].getText()
+            title = title.split("\n")[0]
+            console.log(title)
+
             const empresa = await slw[1].getText()
+            
             const regiao = await slw[2].getText()
+            
+            let modalidade = regiao.match(/\(\w+\)/)
+            modalidade = modalidade[0].slice(1, modalidade[0].length - 1)
+            console.log(`\x1b[36m modalidade: ${modalidade}`)
+            console.log(modalidade)
+
+            const dt_publicado = await this.getANDTranformPublishedDate()
+            console.log(dt_publicado)
+
             console.log(empresa)
             console.log(regiao)
-            const currentUrl = await this.#driver.getCurrentUrl()
-            const url = new URL(currentUrl)
-            const jobId = url.searchParams.get("currentJobId")
-            console.log(`\x1b[33m ${jobId} \x1b[30,`)
             console.log("\n")
             const [descricao, requisitos] = await this.getDescriptionsInfos()
             
@@ -109,9 +177,11 @@ class Controler{
                 keywords: this.#configs.keywords,
                 site: this.#configs.site,
                 jobId,
+                currentUrl,
+                modalidade,
+                dt_publicado
 
                 // requisitos,
-                // currentUrl,
             }
 
             this.saveVacancyOnDataBase(data)
@@ -123,8 +193,15 @@ class Controler{
         console.log("\x1b[32m ==========================")
         const conn = await this.#databaseConnection.connect()
         // await this.#databaseConnection.connect()
-        await conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma, jobid, link) VALUES ($1, $2, $3, $4, $5, $6, $7)", [data.title, data.empresa, data.regiao, data.keywords, data.site, data.jobId])
-        conn.release()
+        const {rows: desc} = await conn.query("INSERT INTO descricoes (descricao) VALUES ($1) RETURNING id", [data.descricao])
+        const desc_id = desc[0].id
+        try{
+
+            await conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma, jobid, link, descricao_fk, modalidade, dt_vac_published) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", [data.title, data.empresa, data.regiao, data.keywords, data.site, data.jobId, data.currentUrl, desc[0].id, data.modalidade, data.dt_publicado])
+        }catch(e){
+            await conn.query("DELETE FROM descricoes WHERE id = $1", [desc_id])
+        }
+            conn.release()
     }
 
     // async getRequirements(){

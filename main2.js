@@ -33,7 +33,7 @@ async function main(){
     await controler.getWebSite()
     const slw = await controler.getBasicInfos()
 
-    // driver.quit()
+    driver.quit()
 }
 
 main()

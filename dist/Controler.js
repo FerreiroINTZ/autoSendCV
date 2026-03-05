@@ -1,164 +1,169 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-};
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _Controler_databaseConnection, _Controler_configs, _Controler_driver, _Controler_elements, _Controler_iaSDK;
 const ControlerConfigurator_1 = __importDefault(require("./ControlerConfigurator"));
 const types_schemas_1 = require("./types$schemas");
 const selenium_webdriver_1 = require("selenium-webdriver");
 class Controler {
+    #databaseConnection;
+    #configs;
+    #driver;
+    #elements;
+    #iaSDK;
     constructor(data) {
-        _Controler_databaseConnection.set(this, void 0);
-        _Controler_configs.set(this, void 0);
-        _Controler_driver.set(this, void 0);
-        _Controler_elements.set(this, void 0);
-        _Controler_iaSDK.set(this, void 0);
         // faz as verificacoes basicas
         ControlerConfigurator_1.default.basicVerificantionsOfUserConfigParam(data);
-        __classPrivateFieldSet(this, _Controler_configs, ControlerConfigurator_1.default.parseConfigs(data.userConfigs), "f");
-        __classPrivateFieldSet(this, _Controler_databaseConnection, data.dbConn, "f");
-        __classPrivateFieldSet(this, _Controler_driver, data.driver, "f");
-        __classPrivateFieldSet(this, _Controler_elements, ControlerConfigurator_1.default.setElementsTag(data.userConfigs.site), "f");
-        __classPrivateFieldSet(this, _Controler_iaSDK, ControlerConfigurator_1.default.instantiateGoogleGenAI(data.userConfigs.aiKey), "f");
+        this.#configs = ControlerConfigurator_1.default.parseConfigs(data.userConfigs);
+        this.#databaseConnection = data.dbConn;
+        this.#driver = data.driver;
+        this.#elements = ControlerConfigurator_1.default.setElementsTag(data.userConfigs.site);
+        this.#iaSDK = ControlerConfigurator_1.default.instantiateGoogleGenAI(data.userConfigs.aiKey);
     }
     // acessa o site
-    getWebSite() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield __classPrivateFieldGet(this, _Controler_driver, "f").get(__classPrivateFieldGet(this, _Controler_configs, "f").url.href);
-        });
+    async getWebSite() {
+        await this.#driver.get(this.#configs.url.href);
+        this.#driver.sleep(6000);
     }
     // manda a ia pegar as informacoes importantes
-    asAiForGetDescDetais(descText) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const resp = yield __classPrivateFieldGet(this, _Controler_iaSDK, "f").models.generateContent({
-                model: "gemini-3-flash-preview",
-                contents: `analise a seguinte descricao, identifique as informacoes do schema e retorne um josn com o schema prenchido: 
+    async asAiForGetDescDetais(descText) {
+        const resp = await this.#iaSDK.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: `analise a seguinte descricao, identifique as informacoes do schema e retorne um josn com o schema prenchido: 
             ${descText}`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseJsonSchema: types_schemas_1.DescriptionSchemaParsed
-                }
-            });
-            console.log(resp.text);
+            config: {
+                responseMimeType: "application/json",
+                responseJsonSchema: types_schemas_1.DescriptionSchemaParsed
+            }
         });
+        console.log(resp.text);
     }
     // pega o texto da descricao; e joga na IA para analisar
-    getDescriptionsInfos() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const descriptionTag = __classPrivateFieldGet(this, _Controler_driver, "f").findElement(selenium_webdriver_1.By.xpath(__classPrivateFieldGet(this, _Controler_elements, "f").vacancyDescriptionTag));
-            const descText = yield descriptionTag.getText();
-            // console.log(descText)
-            // const requisitos = await this.asAiForGetDescDetais(descText)
-            const requisitos = [];
-            return [descText, requisitos];
-        });
+    async getDescriptionsInfos() {
+        // colocar um wait para a tag ul, aqui
+        const descriptionTag = this.#driver.findElement(selenium_webdriver_1.By.xpath(this.#elements.vacancyDescriptionTag));
+        const descText = await descriptionTag.getText();
+        // console.log(descText)
+        // const requisitos = await this.asAiForGetDescDetais(descText)
+        const requisitos = [];
+        return [descText, requisitos];
+    }
+    // relacionado a data de publicacao
+    async getANDTranformPublishedDate() {
+        function transformaTimeInDays(number, time) {
+            let newTime = time;
+            // se o numero for mais q 1 ele sera plural
+            // entao devemos padronizar para o sinngular
+            if (number > 1) {
+                let qtd_slice = 1;
+                if (time == "meses") {
+                    qtd_slice = 2;
+                }
+                newTime = newTime.slice(0, newTime.length - qtd_slice);
+            }
+            let qtd_dias;
+            switch (newTime) {
+                case "dia":
+                    qtd_dias = number;
+                    break;
+                case "semana":
+                    qtd_dias = number * 7;
+                    break;
+                case "mes":
+                    qtd_dias = number * 30;
+                    break;
+                default:
+                    qtd_dias = 0;
+            }
+            const currentDate = new Date();
+            const pastDate = new Date(currentDate.setDate(currentDate.getDate() - Number(qtd_dias)));
+            newTime = `${pastDate.getFullYear()}-${pastDate.getMonth() + 1}-${pastDate.getDate()}`;
+            return newTime;
+        }
+        const span = await this.#driver.wait(selenium_webdriver_1.until.elementLocated(selenium_webdriver_1.By.xpath('//*[@id="main"]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[1]/div/div[1]/div/div[1]/div/div[3]/div/span')));
+        const allSpanText = await span.getText();
+        const { groups } = allSpanText.match(/há (?<number>\d) (?<word>\w+)/);
+        const text = groups.word;
+        const { number } = groups;
+        const published_date = new Date(transformaTimeInDays(number, text));
+        return published_date;
     }
     // new name: "start to get vacancies"
-    getBasicInfos() {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a, e_1, _b, _c;
-            var _d;
-            // pega a lista <ul>
-            const lista = yield __classPrivateFieldGet(this, _Controler_driver, "f").findElement(selenium_webdriver_1.By.xpath(__classPrivateFieldGet(this, _Controler_elements, "f").lista));
-            // <li>s
-            const elements = yield lista.findElements(selenium_webdriver_1.By.css(":scope > *"));
-            console.log(elements.length);
-            try {
-                for (var _e = true, elements_1 = __asyncValues(elements), elements_1_1; elements_1_1 = yield elements_1.next(), _a = elements_1_1.done, !_a; _e = true) {
-                    _c = elements_1_1.value;
-                    _e = false;
-                    const item = _c;
-                    yield __classPrivateFieldGet(this, _Controler_driver, "f").executeScript("arguments[0].scrollIntoView()", item);
-                    yield item.click();
-                    const slw = yield item.findElements(selenium_webdriver_1.By.css(":scope > div > div > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div"));
-                    console.log(slw.length);
-                    let title = yield slw[0].getText();
-                    title = title.split("\n")[0];
-                    console.log(title);
-                    const { rows } = yield __classPrivateFieldGet(this, _Controler_databaseConnection, "f").query("SELECT titulo FROM vagas WHERE titulo = $1", [title]);
-                    console.log(rows);
-                    // se o titulo ja existir passa pro proximo
-                    if (rows.length) {
-                        if (((_d = rows[0]) === null || _d === void 0 ? void 0 : _d.titulo) == title)
-                            continue;
-                    }
-                    const empresa = yield slw[1].getText();
-                    const regiao = yield slw[2].getText();
-                    console.log(empresa);
-                    console.log(regiao);
-                    const currentUrl = yield __classPrivateFieldGet(this, _Controler_driver, "f").getCurrentUrl();
-                    const url = new URL(currentUrl);
-                    const jobId = url.searchParams.get("currentJobId");
-                    console.log(`\x1b[33m ${jobId} \x1b[30,`);
-                    console.log("\n");
-                    const [descricao, requisitos] = yield this.getDescriptionsInfos();
-                    const data = {
-                        title,
-                        empresa,
-                        regiao,
-                        descricao,
-                        keywords: __classPrivateFieldGet(this, _Controler_configs, "f").keywords,
-                        site: __classPrivateFieldGet(this, _Controler_configs, "f").site,
-                        jobId,
-                        // requisitos,
-                        // currentUrl,
-                    };
-                    this.saveVacancyOnDataBase(data);
-                    break;
-                }
+    async getBasicInfos() {
+        // pega a lista <ul>
+        const lista = await this.#driver.wait(selenium_webdriver_1.until.elementLocated(selenium_webdriver_1.By.xpath(this.#elements.lista)), 5000);
+        // const lista = await this.#driver.findElement(By.xpath(this.#elements.lista))
+        // <li>s
+        const elements = await lista.findElements(selenium_webdriver_1.By.css(":scope > *"));
+        console.log(elements.length);
+        for await (const item of elements) {
+            await this.#driver.executeScript("arguments[0].scrollIntoView()", item);
+            await item.click();
+            const slw = await item.findElements(selenium_webdriver_1.By.css(":scope > div > div > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div"));
+            console.log(slw.length);
+            const currentUrl = await this.#driver.getCurrentUrl();
+            const url = new URL(currentUrl);
+            const jobId = url.searchParams.get("currentJobId");
+            console.log(`\x1b[33m ${jobId} \x1b[30m`);
+            const { rows } = await this.#databaseConnection.query("SELECT jobid FROM vagas WHERE jobid = $1", [jobId]);
+            console.log(rows);
+            // se o titulo ja existir passa pro proximo
+            if (rows.length) {
+                if (rows[0]?.jobid == jobId)
+                    continue;
             }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (!_e && !_a && (_b = elements_1.return)) yield _b.call(elements_1);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-        });
+            let title = await slw[0].getText();
+            title = title.split("\n")[0];
+            console.log(title);
+            const empresa = await slw[1].getText();
+            const regiao = await slw[2].getText();
+            let modalidade = regiao.match(/\(\w+\)/);
+            modalidade = modalidade[0].slice(1, modalidade[0].length - 1);
+            console.log(`\x1b[36m modalidade: ${modalidade}`);
+            console.log(modalidade);
+            const dt_publicado = await this.getANDTranformPublishedDate();
+            console.log(dt_publicado);
+            console.log(empresa);
+            console.log(regiao);
+            console.log("\n");
+            const [descricao, requisitos] = await this.getDescriptionsInfos();
+            const data = {
+                title,
+                empresa,
+                regiao,
+                descricao,
+                keywords: this.#configs.keywords,
+                site: this.#configs.site,
+                jobId,
+                currentUrl,
+                modalidade,
+                dt_publicado
+                // requisitos,
+            };
+            this.saveVacancyOnDataBase(data);
+            break;
+        }
     }
-    saveVacancyOnDataBase(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log("\x1b[32m ==========================");
-            const conn = yield __classPrivateFieldGet(this, _Controler_databaseConnection, "f").connect();
-            // await this.#databaseConnection.connect()
-            yield conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma, jobid, link) VALUES ($1, $2, $3, $4, $5, $6, $7)", [data.title, data.empresa, data.regiao, data.keywords, data.site, data.jobId]);
-            conn.release();
-        });
+    async saveVacancyOnDataBase(data) {
+        console.log("\x1b[32m ==========================");
+        const conn = await this.#databaseConnection.connect();
+        // await this.#databaseConnection.connect()
+        const { rows: desc } = await conn.query("INSERT INTO descricoes (descricao) VALUES ($1) RETURNING id", [data.descricao]);
+        const desc_id = desc[0].id;
+        try {
+            await conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma, jobid, link, descricao_fk, modalidade, dt_vac_published) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", [data.title, data.empresa, data.regiao, data.keywords, data.site, data.jobId, data.currentUrl, desc[0].id, data.modalidade, data.dt_publicado]);
+        }
+        catch (e) {
+            await conn.query("DELETE FROM descricoes WHERE id = $1", [desc_id]);
+        }
+        conn.release();
     }
     // async getRequirements(){
     //     const lista = await this.#driver.findElement(By.xpath(this.#elements.lista))
     // }
     getProperties() {
-        console.log(__classPrivateFieldGet(this, _Controler_driver, "f"));
+        console.log(this.#driver);
     }
 }
-_Controler_databaseConnection = new WeakMap(), _Controler_configs = new WeakMap(), _Controler_driver = new WeakMap(), _Controler_elements = new WeakMap(), _Controler_iaSDK = new WeakMap();
 module.exports = Controler;
 //# sourceMappingURL=Controler.js.map
