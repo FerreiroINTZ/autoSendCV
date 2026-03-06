@@ -38,7 +38,7 @@ class Controler{
     }
 
     // manda a ia pegar as informacoes importantes
-    async asAiForGetDescDetais(descText: string){
+    async askAiForGetDescriptionDetais(descText: string){
         const resp = await this.#iaSDK.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: `analise a seguinte descricao, identifique as informacoes do schema e retorne um josn com o schema prenchido: 
@@ -60,14 +60,14 @@ class Controler{
         const descText = await descriptionTag.getText()
         // console.log(descText)
 
-        // const requisitos = await this.asAiForGetDescDetais(descText)
+        // const requisitos = await this.askAiForGetDescriptionDetais(descText)
         const requisitos: string[] = []
 
         return [descText, requisitos]
     }
     
     // relacionado a data de publicacao
-    async getANDTranformPublishedDate(): Promise<Date>{
+    async getANDTranformPublishedDate(): Promise<Date | null>{
         
         function transformaTimeInDays(number: number, time: string){
 
@@ -107,68 +107,79 @@ class Controler{
             
         }
         
-        const span = await this.#driver.wait(until.elementLocated(By.xpath('//*[@id="main"]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[1]/div/div[1]/div/div[1]/div/div[3]/div/span')))
-        const allSpanText = await span.getText()
-        const {groups} = allSpanText.match(/há (?<number>\d) (?<word>\w+)/)
-        const text = groups.word
-        const {number} = groups
+        try{
 
-        const published_date = new Date(transformaTimeInDays(number, text))
+            const span = await this.#driver.wait(until.elementLocated(By.xpath(this.#elements.publishDate)), 5000)
+            const allSpanText = await span.getText()
+            // console.log(`\x1b[32m ${allSpanText} \x1b[30m`)
+            const {groups} = allSpanText.match(/há (?<number>\d+) (?<word>\w+)/)
+            const text = groups.word
+            const {number} = groups
+            
+            const published_date = new Date(transformaTimeInDays(number, text))
+            return published_date
+        }catch(e){
+            return null
+        }
 
-        return published_date
+
     }
 
     // new name: "start to get vacancies"
+    // separar em outra classe
     async getBasicInfos(){
         // pega a lista <ul>
         const lista = await this.#driver.wait(until.elementLocated(By.xpath(this.#elements.lista)), 5000)
-        // const lista = await this.#driver.findElement(By.xpath(this.#elements.lista))
 
         // <li>s
         const elements = await lista.findElements(By.css(":scope > *"))
         
         console.log(elements.length)
+        let qtd = 1
         for await (const item of elements){
             await this.#driver.executeScript("arguments[0].scrollIntoView()", item)
             await item.click()
             const slw = await item.findElements(By.css(":scope > div > div > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div"))
-            console.log(slw.length)
 
+            // separar em outro metodo (verify on Data Base)
             const currentUrl = await this.#driver.getCurrentUrl()
             const url = new URL(currentUrl)
             const jobId = url.searchParams.get("currentJobId")
-            console.log(`\x1b[33m ${jobId} \x1b[30m`)
             const {rows} = await this.#databaseConnection.query("SELECT jobid FROM vagas WHERE jobid = $1", [jobId])
-            console.log(rows)
+            // console.log(rows)
             
             // se o titulo ja existir passa pro proximo
             if(rows.length){
                 if(rows[0]?.jobid == jobId)
-                continue
+                    continue
             }
-
+            
             
             let title = await slw[0].getText()
             title = title.split("\n")[0]
-            console.log(title)
-
+            
             const empresa = await slw[1].getText()
             
             const regiao = await slw[2].getText()
             
-            let modalidade = regiao.match(/\(\w+\)/)
-            modalidade = modalidade[0].slice(1, modalidade[0].length - 1)
-            console.log(`\x1b[36m modalidade: ${modalidade}`)
-            console.log(modalidade)
+            let macthModalidade = regiao.match(/\((?<modalidade>[a-zA-ZÀ-ú]+)\)$/)
+            if(macthModalidade){
+                macthModalidade = macthModalidade.groups.modalidade
+            }
 
+            // modalidade = modalidade[0].slice(1, modalidade[0].length - 1)
             const dt_publicado = await this.getANDTranformPublishedDate()
-            console.log(dt_publicado)
-
-            console.log(empresa)
-            console.log(regiao)
-            console.log("\n")
+                
+            // console.log(`\x1b[33m ${jobId} \x1b[30m`)
+            // console.log(title)
+            // console.log(modalidade)
+            // console.log(dt_publicado)
+            // console.log(empresa)
+            // console.log(regiao)
+            // console.log("\n")
             const [descricao, requisitos] = await this.getDescriptionsInfos()
             
+            // criar um tipo para os dados recebidos, e verificar com o zod
             const data: any = {
                 title,
                 empresa,
@@ -178,17 +189,21 @@ class Controler{
                 site: this.#configs.site,
                 jobId,
                 currentUrl,
-                modalidade,
+                macthModalidade,
                 dt_publicado
-
+                
                 // requisitos,
             }
-
-            this.saveVacancyOnDataBase(data)
-            break
-        }
+            // salva no banco
+            // this.saveVacancyOnDataBase(data)
+            console.log(`${qtd}/${elements.length}`)
+            qtd++
+            // break
+    }
+    console.log("Terminol!")
     }
 
+    // salva no banco
     async saveVacancyOnDataBase(data: any){
         console.log("\x1b[32m ==========================")
         const conn = await this.#databaseConnection.connect()
@@ -198,6 +213,8 @@ class Controler{
         try{
 
             await conn.query("INSERT INTO vagas(titulo, empresa, cidade, keywords, plataforma, jobid, link, descricao_fk, modalidade, dt_vac_published) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", [data.title, data.empresa, data.regiao, data.keywords, data.site, data.jobId, data.currentUrl, desc[0].id, data.modalidade, data.dt_publicado])
+            
+            // se falhar ele apaga a descricao, pra ela nao ficar sozinha
         }catch(e){
             await conn.query("DELETE FROM descricoes WHERE id = $1", [desc_id])
         }

@@ -7,9 +7,9 @@ declare class Controler {
         driver: any;
     });
     getWebSite(): Promise<void>;
-    asAiForGetDescDetais(descText: string): Promise<void>;
+    askAiForGetDescriptionDetais(descText: string): Promise<void>;
     getDescriptionsInfos(): Promise<any[]>;
-    getANDTranformPublishedDate(): Promise<Date>;
+    getANDTranformPublishedDate(): Promise<Date | null>;
     getBasicInfos(): Promise<void>;
     saveVacancyOnDataBase(data: any): Promise<void>;
     getProperties(): void;

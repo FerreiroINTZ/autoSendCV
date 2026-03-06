@@ -58,6 +58,7 @@ export type Elements = {
     empresa: string,
     regiao: string,
     vacancyDescriptionTag: string,
+    publishDate: string,
 }
 
 // ================ Descriptionn Schema

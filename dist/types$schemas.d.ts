@@ -37,6 +37,7 @@ export type Elements = {
     empresa: string;
     regiao: string;
     vacancyDescriptionTag: string;
+    publishDate: string;
 };
 export declare const DescriptionSchemaParsed: z.core.ZodStandardJSONSchemaPayload<z.ZodObject<{
     salario: z.ZodNumber;

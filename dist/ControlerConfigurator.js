@@ -84,6 +84,7 @@ class ControlerConfigurator {
                 empresa: `//*[@id="ember153"]/span`,
                 regiao: `//*[@id="ember154"]/ul/li/span`,
                 vacancyDescriptionTag: `//*[@id="job-details"]/div/p`,
+                publishDate: '//*[@id="main"]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[1]/div/div[1]/div/div[1]/div/div[3]/div/span'
             },
             indeed: {
                 lista: ``,
@@ -91,7 +92,8 @@ class ControlerConfigurator {
                 title: ``,
                 empresa: ``,
                 regiao: ``,
-                vacancyDescriptionTag: ``
+                vacancyDescriptionTag: ``,
+                publishDate: ''
             },
             infojobs: {
                 lista: ``,
@@ -99,7 +101,8 @@ class ControlerConfigurator {
                 title: ``,
                 empresa: ``,
                 regiao: ``,
-                vacancyDescriptionTag: ``
+                vacancyDescriptionTag: ``,
+                publishDate: ''
             },
         };
         return opts[site];
