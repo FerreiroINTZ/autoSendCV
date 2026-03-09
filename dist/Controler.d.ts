@@ -7,6 +7,7 @@ declare class Controler {
         driver: any;
     });
     getWebSite(): Promise<void>;
+    doResearch(): Promise<void>;
     askAiForGetDescriptionDetais(descText: string): Promise<void>;
     getDescriptionsInfos(): Promise<any[]>;
     getANDTranformPublishedDate(): Promise<Date | null>;

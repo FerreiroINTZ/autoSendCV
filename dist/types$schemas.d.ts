@@ -8,9 +8,10 @@ export declare const UserConfigSchema: z.ZodObject<{
         indeed: "indeed";
         infojobs: "infojobs";
     }>;
-    keywords: z.ZodArray<z.ZodString>;
+    searchWords: z.ZodArray<z.ZodString>;
     aiKey: z.ZodString;
     area: z.ZodOptional<z.ZodString>;
+    keywords: z.ZodOptional<z.ZodArray<z.ZodString>>;
     knowledge: z.ZodOptional<z.ZodArray<z.ZodString>>;
     cidade: z.ZodOptional<z.ZodString>;
 }, z.core.$strict>;
@@ -21,10 +22,11 @@ export declare const ConfigSchema: z.ZodObject<{
         indeed: "indeed";
         infojobs: "infojobs";
     }>;
-    keywords: z.ZodArray<z.ZodString>;
+    searchWords: z.ZodArray<z.ZodString>;
     aiKey: z.ZodString;
     ai: z.ZodOptional<z.ZodCustom<GoogleGenAI, GoogleGenAI>>;
     url: z.ZodOptional<z.ZodCustom<URL, URL>>;
+    keywords: z.ZodOptional<z.ZodArray<z.ZodString>>;
     area: z.ZodOptional<z.ZodString>;
     knowledge: z.ZodOptional<z.ZodArray<z.ZodString>>;
     cidade: z.ZodOptional<z.ZodString>;

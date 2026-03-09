@@ -7,7 +7,7 @@ import {
     Elements, 
     DescriptionSchemaParsed
 } from "./types$schemas"
-import {By, until} from "selenium-webdriver"
+import {By, until, Key} from "selenium-webdriver"
 import {Pool} from "pg"
 
 class Controler{
@@ -33,8 +33,20 @@ class Controler{
 
     // acessa o site
     async getWebSite(){
+        await this.#driver.manage().window().setRect({width: 1000, heigth: 700})
         await this.#driver.get(this.#configs.url!.href)
         this.#driver.sleep(6000)
+        await this.doResearch()
+    }
+
+    async doResearch(){
+        console.log("ssasasass")
+        const keywordInput = await this.#driver.wait(until.elementLocated(By.xpath('//*[@id="root"]/div[2]/div[2]/div[1]/header/div/div/div/div[2]/div/div/div/div/div[1]/div/div/input')), 8000)
+        const cityInput = await this.#driver.wait(until.elementLocated(By.xpath('//*[@id="root"]/div[2]/div[2]/div[1]/header/div/div/div/div[2]/div/div/div/div/div[2]/div/input')), 5000)
+
+        await keywordInput.sendKeys(this.#configs.searchWords[0])
+        await cityInput.sendKeys(this.#configs.cidade)
+        await cityInput.sendKeys(Key.ENTER)
     }
 
     // manda a ia pegar as informacoes importantes
@@ -129,7 +141,13 @@ class Controler{
     // separar em outra classe
     async getBasicInfos(){
         // pega a lista <ul>
-        const lista = await this.#driver.wait(until.elementLocated(By.xpath(this.#elements.lista)), 5000)
+        console.log("\x1b[31m")
+        console.log(this.#elements)
+        console.log("\x1b[30m")
+        const lista = await this.#driver.wait(until.elementLocated(By.xpath(this.#elements.lista), 10 * 100))
+        // '//*[@id="main"]/div/div[2]/div[1]/div/ul'
+
+        console.log("slw")
 
         // <li>s
         const elements = await lista.findElements(By.css(":scope > *"))
@@ -191,7 +209,7 @@ class Controler{
                 empresa,
                 regiao,
                 descricao,
-                keywords: this.#configs.keywords,
+                keywords: this.#configs.searchWords,
                 site: this.#configs.site,
                 jobId,
                 currentUrl,

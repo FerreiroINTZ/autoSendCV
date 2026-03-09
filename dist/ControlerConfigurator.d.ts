@@ -8,10 +8,11 @@ declare class ControlerConfigurator {
     }): void;
     static transformUrlOnConfigProperty(configs: Configuracao): {
         site: "linkedin" | "indeed" | "infojobs";
-        keywords: string[];
+        searchWords: string[];
         aiKey: string;
         ai?: GoogleGenAI | undefined;
         url?: URL | undefined;
+        keywords?: string[] | undefined;
         area?: string | undefined;
         knowledge?: string[] | undefined;
         cidade?: string | undefined;
@@ -21,10 +22,11 @@ declare class ControlerConfigurator {
     static instantiateGoogleGenAI(apiKey: string): GoogleGenAI;
     static parseConfigs(userData: UserConfig): {
         site: "linkedin" | "indeed" | "infojobs";
-        keywords: string[];
+        searchWords: string[];
         aiKey: string;
         ai?: GoogleGenAI | undefined;
         url?: URL | undefined;
+        keywords?: string[] | undefined;
         area?: string | undefined;
         knowledge?: string[] | undefined;
         cidade?: string | undefined;

@@ -17,9 +17,11 @@ const EnumSites = z.enum(Sites)
 
 export const UserConfigSchema = z.object({
     site: EnumSites,
-    keywords: z.array(z.string()).min(1, "Pecisa de pelo menos 1 Item"),
+    searchWords: z.array(z.string()).min(1, "Precisa de pelo menos 1 item"),
     aiKey: z.string(),
+    
     area: z.string().optional(),
+    keywords: z.array(z.string()).optional(),
     knowledge: z.array(z.string()).optional(),
     cidade: z.string().optional(),
 }).strict()
@@ -30,13 +32,14 @@ export type UserConfig = z.infer<typeof UserConfigSchema>
 
 export const ConfigSchema = z.object({
     site: EnumSites,
-    keywords: z.array(z.string()).min(1, "Pecisa de pelo menos 1 Item"),
+    searchWords: z.array(z.string()).min(1, "Precisa de pelo menos 1 item"),
     aiKey: z.string(),
-
+    
     // sao obrigatorios
     ai: z.instanceof(GoogleGenAI).optional(),
     url: z.instanceof(URL).optional(),
     
+    keywords: z.array(z.string()).optional(),
     area: z.string().optional(),
     knowledge: z.array(z.string()).optional(),
     cidade: z.string().optional(),

@@ -33,7 +33,7 @@ class ControlerConfigurator {
         const newObj = { ...configs };
         newObj.url = new URL(this.sitesDefaultsConfigs(configs.site).host);
         newObj.url.pathname = this.sitesDefaultsConfigs(configs.site).pathname;
-        newObj.url.search = this.sitesDefaultsConfigs(configs.site).search + configs.keywords[0];
+        newObj.url.search = this.sitesDefaultsConfigs(configs.site).search + configs.searchWords[0];
         return { ...newObj };
     }
     // configura a URL para cada opcao
@@ -42,7 +42,7 @@ class ControlerConfigurator {
         const opts = {
             linkedin: {
                 host: `https://${word}.com`,
-                pathname: "jobs/search/",
+                pathname: "jobs/",
                 search: "keywords="
             },
             indeed: {
@@ -77,7 +77,7 @@ class ControlerConfigurator {
         const opts = {
             linkedin: {
                 // xpath
-                lista: `//*[@id="main"]/div/div[2]/div[1]/div/ul`,
+                lista: '//*[@id="main"]/div/div[2]/div[1]/div/ul',
                 // css
                 singleVacancy: `:scope > li`,
                 title: `//div[@class="ember-view"]/span[1]/strong`,

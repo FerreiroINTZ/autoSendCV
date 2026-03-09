@@ -17,7 +17,9 @@ async function main(){
     console.log(rows)
 
     const options = new chrome.Options()
-    options.addArguments("user-data-dir=driver")
+    options.addArguments("user-data-dir=driver",
+        // "--start-maximized"
+    )
 
     const driver = new Builder()
     .forBrowser("chrome")
@@ -26,14 +28,15 @@ async function main(){
     console.log("iniciado")
 
     const dbConn = db
-    const userConfigs = {site: "linkedin", keywords: ["front"], aiKey: process.env.AIAPIKEY}
+    const userConfigs = {site: "linkedin", searchWords: ["front"], aiKey: process.env.AIAPIKEY, cidade: "sumare, sao paulo"}
 
     const controler = new Contoler({dbConn, userConfigs, driver})
     
     await controler.getWebSite()
     const slw = await controler.getBasicInfos()
+    await driver.sleep(4500)
 
-    driver.quit()
+    // driver.quit()
 }
 
 main()
