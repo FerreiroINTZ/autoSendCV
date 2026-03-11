@@ -6,7 +6,7 @@ import {
     UserConfig,
     ListaDeSites,
     Elements
-} from "./types$schemas"
+} from "./types/types$schemas"
 
 class ControlerConfigurator{
     
@@ -31,6 +31,7 @@ class ControlerConfigurator{
             throw new Error("Configuracoes invalidas")
         }
 
+        // verifica se a API do Gemini ta funcionando
         try{
             const api_teste = new GoogleGenAI({apiKey: userConfigs.aiKey})
             this.testeAiAPI(api_teste)

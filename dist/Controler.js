@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 const ControlerConfigurator_1 = __importDefault(require("./ControlerConfigurator"));
 const types_schemas_1 = require("./types$schemas");
 const selenium_webdriver_1 = require("selenium-webdriver");
+const fs_1 = __importDefault(require("fs"));
 class Controler {
     #databaseConnection;
     #configs;
@@ -15,10 +16,12 @@ class Controler {
         // faz as verificacoes basicas
         ControlerConfigurator_1.default.basicVerificantionsOfUserConfigParam(data);
         this.#configs = ControlerConfigurator_1.default.parseConfigs(data.userConfigs);
+        this.#configs.paginas = data.userConfigs.paginas || 1;
         this.#databaseConnection = data.dbConn;
         this.#driver = data.driver;
         this.#elements = ControlerConfigurator_1.default.setElementsTag(data.userConfigs.site);
         this.#iaSDK = ControlerConfigurator_1.default.instantiateGoogleGenAI(data.userConfigs.aiKey);
+        console.log(this.#configs.paginas);
     }
     // acessa o site
     async getWebSite() {
@@ -111,9 +114,24 @@ class Controler {
         console.log("\x1b[31m");
         console.log(this.#elements);
         console.log("\x1b[30m");
-        const lista = await this.#driver.wait(selenium_webdriver_1.until.elementLocated(selenium_webdriver_1.By.xpath(this.#elements.lista), 10 * 100));
-        // '//*[@id="main"]/div/div[2]/div[1]/div/ul'
-        console.log("slw");
+        let lista;
+        try {
+            console.log('===============');
+            await this.#driver.sleep(20000);
+            console.log('=================');
+            // const listas = await this.#driver.wait(until.elementLocated(By.xpath('//*[@id="main"]/div/div[2]/div[1]/div/ul')), 10 * 1000)
+            // lista = listas
+            //*[@id="main"]/div/div[2]/div[1]/div/ul
+            const rpz = await this.#driver.executeScript(() => document.getElementById("main"));
+            console.log(rpz);
+        }
+        catch (e) {
+            //*[@id="main"]/div/div[2]/div[1]/div/ul
+            const shot = await this.#driver.takeScreenshot();
+            await fs_1.default.promises.writeFile("./photo.png", shot, "base64");
+            throw new Error("Tempo esgotado");
+        }
+        return null;
         // <li>s
         const elements = await lista.findElements(selenium_webdriver_1.By.css(":scope > *"));
         console.log(elements.length);

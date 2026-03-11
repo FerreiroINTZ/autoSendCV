@@ -12,6 +12,7 @@ declare class ControlerConfigurator {
         aiKey: string;
         ai?: GoogleGenAI | undefined;
         url?: URL | undefined;
+        paginas?: number | undefined;
         keywords?: string[] | undefined;
         area?: string | undefined;
         knowledge?: string[] | undefined;
@@ -26,6 +27,7 @@ declare class ControlerConfigurator {
         aiKey: string;
         ai?: GoogleGenAI | undefined;
         url?: URL | undefined;
+        paginas?: number | undefined;
         keywords?: string[] | undefined;
         area?: string | undefined;
         knowledge?: string[] | undefined;

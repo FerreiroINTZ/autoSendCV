@@ -6,11 +6,13 @@ import {
     Configuracao, 
     Elements, 
     DescriptionSchemaParsed
-} from "./types$schemas"
+} from "./types/types$schemas"
 import {By, until, Key} from "selenium-webdriver"
 import {Pool} from "pg"
+import fs from "fs"
+import Utils from "./ControlerUtils"
 
-class Controler{
+class Controler extends Utils{
     #databaseConnection: Pool;
     #configs: Configuracao;
     #driver: any;
@@ -24,11 +26,17 @@ class Controler{
         // faz as verificacoes basicas
         Configurator.basicVerificantionsOfUserConfigParam(data)
 
+        // seta as propriedades da classe Utils
+        const elements = Configurator.setElementsTag(data.userConfigs.site)
+        super(data.driver, elements)
+
         this.#configs = Configurator.parseConfigs(data.userConfigs)
+        this.#configs.paginas = data.userConfigs.paginas || 1
         this.#databaseConnection = data.dbConn
         this.#driver = data.driver
-        this.#elements = Configurator.setElementsTag(data.userConfigs.site)
+        this.#elements = elements
         this.#iaSDK = Configurator.instantiateGoogleGenAI(data.userConfigs.aiKey)
+        console.log(this.#configs.paginas)
     }
 
     // acessa o site
@@ -39,14 +47,15 @@ class Controler{
         await this.doResearch()
     }
 
+    // faz a pesquisa, usando os inputs para isso
     async doResearch(){
-        console.log("ssasasass")
         const keywordInput = await this.#driver.wait(until.elementLocated(By.xpath('//*[@id="root"]/div[2]/div[2]/div[1]/header/div/div/div/div[2]/div/div/div/div/div[1]/div/div/input')), 8000)
         const cityInput = await this.#driver.wait(until.elementLocated(By.xpath('//*[@id="root"]/div[2]/div[2]/div[1]/header/div/div/div/div[2]/div/div/div/div/div[2]/div/input')), 5000)
 
         await keywordInput.sendKeys(this.#configs.searchWords[0])
         await cityInput.sendKeys(this.#configs.cidade)
         await cityInput.sendKeys(Key.ENTER)
+        await this.#driver.sleep(20000)
     }
 
     // manda a ia pegar as informacoes importantes
@@ -63,80 +72,6 @@ class Controler{
         console.log(resp.text)
     }
 
-    // pega o texto da descricao; e joga na IA para analisar
-    async getDescriptionsInfos(){
-
-        // colocar um wait para a tag ul, aqui
-        
-        const descriptionTag = this.#driver.findElement(By.xpath(this.#elements.vacancyDescriptionTag))
-        const descText = await descriptionTag.getText()
-        // console.log(descText)
-
-        // const requisitos = await this.askAiForGetDescriptionDetais(descText)
-        const requisitos: string[] = []
-
-        return [descText, requisitos]
-    }
-    
-    // relacionado a data de publicacao
-    async getANDTranformPublishedDate(): Promise<Date | null>{
-        
-        function transformaTimeInDays(number: number, time: string){
-
-            let newTime = time
-
-            // se o numero for mais q 1 ele sera plural
-            // entao devemos padronizar para o sinngular
-            if(number > 1){
-                let qtd_slice = 1
-                if(time == "meses"){
-                    qtd_slice = 2
-                }
-                newTime = newTime.slice(0, newTime.length - qtd_slice)
-            }
-
-            let qtd_dias;
-
-            switch(newTime){
-                case "dia":
-                    qtd_dias = number
-                break
-                case "semana":
-                    qtd_dias = number * 7
-                break
-                case "mes":
-                    qtd_dias = number * 30
-                break
-                default:
-                    qtd_dias = 0
-            }
-
-            const currentDate = new Date()
-            const pastDate = new Date(currentDate.setDate(currentDate.getDate() - Number(qtd_dias)))
-            newTime = `${pastDate.getFullYear()}-${pastDate.getMonth() + 1}-${pastDate.getDate()}`
-
-            return newTime
-            
-        }
-        
-        try{
-
-            const span = await this.#driver.wait(until.elementLocated(By.xpath(this.#elements.publishDate)), 5000)
-            const allSpanText = await span.getText()
-            // console.log(`\x1b[32m ${allSpanText} \x1b[30m`)
-            const {groups} = allSpanText.match(/há (?<number>\d+) (?<word>\w+)/)
-            const text = groups.word
-            const {number} = groups
-            
-            const published_date = new Date(transformaTimeInDays(number, text))
-            return published_date
-        }catch(e){
-            return null
-        }
-
-
-    }
-
     // new name: "start to get vacancies"
     // separar em outra classe
     async getBasicInfos(){
@@ -144,11 +79,24 @@ class Controler{
         console.log("\x1b[31m")
         console.log(this.#elements)
         console.log("\x1b[30m")
-        const lista = await this.#driver.wait(until.elementLocated(By.xpath(this.#elements.lista), 10 * 100))
-        // '//*[@id="main"]/div/div[2]/div[1]/div/ul'
 
-        console.log("slw")
+        let lista: any;
+        try{
+            // const listas = await this.#driver.wait(until.elementLocated(By.xpath('//*[@id="main"]/div/div[2]/div[1]/div/ul')), 10 * 1000)
+            // lista = listas
 
+            //*[@id="main"]/div/div[2]/div[1]/div/ul
+            const rpz = await this.#driver.executeScript(() => document.getElementById("main"))
+            console.log(rpz)
+        }catch(e){
+            //*[@id="main"]/div/div[2]/div[1]/div/ul
+            const shot = await this.#driver.takeScreenshot()
+            await fs.promises.writeFile("./photo.png", shot, "base64")
+            throw new Error("Tempo esgotado")
+        }
+
+        return null
+            
         // <li>s
         const elements = await lista.findElements(By.css(":scope > *"))
         

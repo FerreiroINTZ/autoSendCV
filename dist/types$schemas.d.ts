@@ -10,6 +10,7 @@ export declare const UserConfigSchema: z.ZodObject<{
     }>;
     searchWords: z.ZodArray<z.ZodString>;
     aiKey: z.ZodString;
+    paginas: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     area: z.ZodOptional<z.ZodString>;
     keywords: z.ZodOptional<z.ZodArray<z.ZodString>>;
     knowledge: z.ZodOptional<z.ZodArray<z.ZodString>>;
@@ -26,6 +27,7 @@ export declare const ConfigSchema: z.ZodObject<{
     aiKey: z.ZodString;
     ai: z.ZodOptional<z.ZodCustom<GoogleGenAI, GoogleGenAI>>;
     url: z.ZodOptional<z.ZodCustom<URL, URL>>;
+    paginas: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
     keywords: z.ZodOptional<z.ZodArray<z.ZodString>>;
     area: z.ZodOptional<z.ZodString>;
     knowledge: z.ZodOptional<z.ZodArray<z.ZodString>>;

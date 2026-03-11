@@ -16,6 +16,7 @@ exports.UserConfigSchema = zod_1.z.object({
     site: EnumSites,
     searchWords: zod_1.z.array(zod_1.z.string()).min(1, "Precisa de pelo menos 1 item"),
     aiKey: zod_1.z.string(),
+    paginas: zod_1.z.number().default(1).optional(),
     area: zod_1.z.string().optional(),
     keywords: zod_1.z.array(zod_1.z.string()).optional(),
     knowledge: zod_1.z.array(zod_1.z.string()).optional(),
@@ -29,6 +30,7 @@ exports.ConfigSchema = zod_1.z.object({
     // sao obrigatorios
     ai: zod_1.z.instanceof(genai_1.GoogleGenAI).optional(),
     url: zod_1.z.instanceof(URL).optional(),
+    paginas: zod_1.z.number().default(1).optional(),
     keywords: zod_1.z.array(zod_1.z.string()).optional(),
     area: zod_1.z.string().optional(),
     knowledge: zod_1.z.array(zod_1.z.string()).optional(),

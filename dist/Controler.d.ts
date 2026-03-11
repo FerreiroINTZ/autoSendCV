@@ -1,4 +1,4 @@
-import { Configuracao } from "./types$schemas";
+import { Configuracao } from "./types/types$schemas";
 declare class Controler {
     #private;
     constructor(data: {
@@ -11,7 +11,7 @@ declare class Controler {
     askAiForGetDescriptionDetais(descText: string): Promise<void>;
     getDescriptionsInfos(): Promise<any[]>;
     getANDTranformPublishedDate(): Promise<Date | null>;
-    getBasicInfos(): Promise<void>;
+    getBasicInfos(): Promise<null>;
     saveVacancyOnDataBase(data: any): Promise<void>;
     getProperties(): void;
 }
