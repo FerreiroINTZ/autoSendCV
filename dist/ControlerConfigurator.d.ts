@@ -18,7 +18,7 @@ declare class ControlerConfigurator {
         knowledge?: string[] | undefined;
         cidade?: string | undefined;
     };
-    static sitesDefaultsConfigs(word: string): any;
+    static sitesDefaultsConfigs(word: string, city?: object): any;
     static testeAiAPI(apiInstance: GoogleGenAI): Promise<void>;
     static instantiateGoogleGenAI(apiKey: string): GoogleGenAI;
     static parseConfigs(userData: UserConfig): {

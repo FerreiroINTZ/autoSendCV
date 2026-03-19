@@ -35,7 +35,7 @@ async function main(){
     const controler = new Contoler({dbConn, userConfigs, driver})
     
     await controler.getWebSite()
-    const slw = await controler.getBasicInfos()
+    const slw = await controler.startToGetVacancies()
     await driver.sleep(4500)
 
     // driver.quit()

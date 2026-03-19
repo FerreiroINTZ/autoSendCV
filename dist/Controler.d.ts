@@ -1,5 +1,5 @@
+import Utils from "./utils/utils";
 import { Configuracao } from "./types/types$schemas";
-import Utils from "./ControlerUtils";
 declare class Controler extends Utils {
     #private;
     constructor(data: {
@@ -9,7 +9,7 @@ declare class Controler extends Utils {
     });
     getWebSite(): Promise<void>;
     askAiForGetDescriptionDetais(descText: string): Promise<void>;
-    getBasicInfos(): Promise<void>;
+    startToGetVacancies(): Promise<void>;
     saveVacancyOnDataBase(data: any): Promise<void>;
     getProperties(): void;
 }

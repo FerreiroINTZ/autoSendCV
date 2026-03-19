@@ -1,23 +1,38 @@
 import {z} from "zod"
 import {GoogleGenAI} from "@google/genai"
-import Configurator from "./ControlerConfigurator"
+
+import Configurator from "./configurator/configurator"
+import DataBaseContoler from "./db/DatabaseControler"
+import AIControler from "./ai/AIControler"
+import Utils from "./utils/utils"
+
 import {
     ConfigSchema, 
     Configuracao, 
     Elements, 
     DescriptionSchemaParsed
 } from "./types/types$schemas"
+
 import {By, until, Key} from "selenium-webdriver"
 import {Pool} from "pg"
 import fs from "fs"
-import Utils from "./ControlerUtils"
+
+function composition(...clases: any[]){
+
+    const Clases = []
+    for(let y = 0; y < clases.length; y++){
+        
+    }
+
+}
 
 class Controler extends Utils{
-    #databaseConnection: Pool;
-    #configs: Configuracao;
     #driver: any;
     #elements: Elements;
+    
+    #databaseConnection: Pool;
     #iaSDK: GoogleGenAI;
+    #configs: Configuracao;
 
     constructor(
         data: 
@@ -25,7 +40,7 @@ class Controler extends Utils{
     ){
         // faz as verificacoes basicas
         Configurator.basicVerificantionsOfUserConfigParam(data)
-
+        
         // seta as propriedades da classe Utils
         const elements = Configurator.setElementsTag(data.userConfigs.site)
         super(data.driver, elements)
@@ -76,7 +91,7 @@ class Controler extends Utils{
     }
 
     // new name: "start_to_get_vacancies"
-    async getBasicInfos(){
+    async startToGetVacancies(){
 
         // pega a lista <ul>
         let lista: any;

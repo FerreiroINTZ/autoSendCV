@@ -47,12 +47,19 @@ class ControlerConfigurator{
         newObj.url = new URL(this.sitesDefaultsConfigs(configs.site).host)
         newObj.url.pathname = this.sitesDefaultsConfigs(configs.site).pathname
         // essa parte pode usar o searchParams
-        newObj.url.search = this.sitesDefaultsConfigs(configs.site).search + configs.searchWords[0]
+        newObj.url.search = this.sitesDefaultsConfigs(configs.site, {city: configs.cidade, keywords: configs.keywords}).search + configs.searchWords[0]
         return {...newObj}
     }
 
     // configura a URL para cada opcao
-    static sitesDefaultsConfigs(word: string){
+    static sitesDefaultsConfigs(word: string, city?: object){
+
+        function linkedinFormat(data: any){
+            const formater = new URLSearchParams()
+            formater.set("keywords", data.keywords[0])
+            formater.set("geoId", "103451405")
+            return formater.toString()
+        }
 
         // tem que tipar esse objeto com o "Record<>"
         // aqui provavelmente vai precisar receber uma funcao que ja formata o search
@@ -61,8 +68,9 @@ class ControlerConfigurator{
             linkedin: {
                 host: `https://${word}.com`,
                 pathname: "jobs/search",
-                search: "keywords=",
-                geoId: "103451405" // sumare, spp
+                search: function(){return linkedinFormat(this)},
+                // "keywords="
+                // geoId: "103451405" // sumare, spp
             },
             indeed: {
                 host: `https://${word}.com`,

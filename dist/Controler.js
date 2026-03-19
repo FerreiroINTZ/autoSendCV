@@ -2,12 +2,21 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-const ControlerConfigurator_1 = __importDefault(require("./ControlerConfigurator"));
+const configurator_1 = __importDefault(require("./configurator/configurator"));
+const DatabaseControler_1 = __importDefault(require("./db/DatabaseControler"));
+const AIControler_1 = __importDefault(require("./ai/AIControler"));
+const utils_1 = __importDefault(require("./utils/utils"));
 const types_schemas_1 = require("./types/types$schemas");
 const selenium_webdriver_1 = require("selenium-webdriver");
 const fs_1 = __importDefault(require("fs"));
-const ControlerUtils_1 = __importDefault(require("./ControlerUtils"));
-class Controler extends ControlerUtils_1.default {
+function composition() {
+    return {
+        DBControler: new DatabaseControler_1.default(),
+        Configurator: new configurator_1.default(),
+        aiControler: new AIControler_1.default()
+    };
+}
+class Controler extends utils_1.default {
     #databaseConnection;
     #configs;
     #driver;
@@ -15,16 +24,16 @@ class Controler extends ControlerUtils_1.default {
     #iaSDK;
     constructor(data) {
         // faz as verificacoes basicas
-        ControlerConfigurator_1.default.basicVerificantionsOfUserConfigParam(data);
+        configurator_1.default.basicVerificantionsOfUserConfigParam(data);
         // seta as propriedades da classe Utils
-        const elements = ControlerConfigurator_1.default.setElementsTag(data.userConfigs.site);
+        const elements = configurator_1.default.setElementsTag(data.userConfigs.site);
         super(data.driver, elements);
-        this.#configs = ControlerConfigurator_1.default.parseConfigs(data.userConfigs);
+        this.#configs = configurator_1.default.parseConfigs(data.userConfigs);
         this.#configs.paginas = data.userConfigs.paginas || 1;
         this.#databaseConnection = data.dbConn;
         this.#driver = data.driver;
         this.#elements = elements;
-        this.#iaSDK = ControlerConfigurator_1.default.instantiateGoogleGenAI(data.userConfigs.aiKey);
+        this.#iaSDK = configurator_1.default.instantiateGoogleGenAI(data.userConfigs.aiKey);
         console.log(this.#configs.paginas);
     }
     // acessa o site
@@ -60,7 +69,7 @@ class Controler extends ControlerUtils_1.default {
         console.log(resp.text);
     }
     // new name: "start_to_get_vacancies"
-    async getBasicInfos() {
+    async startToGetVacancies() {
         // pega a lista <ul>
         let lista;
         try {
