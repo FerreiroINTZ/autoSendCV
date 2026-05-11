@@ -31,7 +31,7 @@ export default class AIControler{
         // invalida o modelo atual
         this.#ai_models[this.#current_ai_model.indx]!.isUsable = false
 
-        // verifica se o modelo atul e o ultimo
+        // verifica se o modelo atual e o ultimo
         // pois, se for, ele invalida o uso da IA para a pesquisa
         if(this.#ai_models.length == this.#current_ai_model.indx + 1){
             // console.log("\x1b[32m inutilizavel! \x1b[0m")
@@ -47,10 +47,10 @@ export default class AIControler{
         })
         
         
-        console.log(this.#ai_models[currUsable])
-        console.log(currUsable)
-        console.log(this.#current_ai_model)
-        console.log(this.#ai_models)
+        // console.log(this.#ai_models[currUsable])
+        // console.log(currUsable)
+        // console.log(this.#current_ai_model)
+        // console.log(this.#ai_models)
 
         this.#current_ai_model = {
             nome: this.#ai_models[currUsable]!.name,
@@ -65,9 +65,10 @@ export default class AIControler{
         // console.log("Current Model: ")
         // console.log(this.#current_ai_model.nome)
 
-        console.log("Modelo novo: ")
+        // console.log("Modelo novo: ")
 
         // tenta de novo
+        console.log("modelo mudado!")
         this.askAiForGetDescriptionDetais(descText, keyWords, otherInfos)
     }
 
@@ -80,6 +81,7 @@ export default class AIControler{
         }
     }
 
+    // retornar os dados, mas se a IA nao analisar retorna false, e fora daq ha uma validacao que nao permite a IA analisar mais as vagas
     async askAiForGetDescriptionDetais(
         descText: string, 
         keyWords: string[],
@@ -99,12 +101,6 @@ export default class AIControler{
             .replace(/\${descText}/, descText) + otherInfos
         
         try{
-            
-            // throw new Error(JSON.stringify({
-            //     error: {
-            //         message: "You exceeded"
-            //     }
-            // }))
 
             const resp = await this.#ai.models.generateContent({
                 model: this.#current_ai_model.nome,
@@ -124,7 +120,11 @@ export default class AIControler{
             // console.log(msg)
             if(msg.includes("You exceeded")){
                 console.log("tokens maximos atingidos para: ", this.#current_ai_model.nome)
+                
+                // nao retorna nada
+                // apenas muda o modelo, ou define como nao usavel a IA
                 this.changeAiModel(descText, keyWords, otherInfos)
+                console.log(msg)
                 if(!this.#isUsable){
                     return false
                 }

@@ -1,1 +1,0 @@
-{"version":3,"file":"DatabaseControler.d.ts","sourceRoot":"","sources":["../../src/db/DatabaseControler.ts"],"names":[],"mappings":"AAIA,MAAM,CAAC,OAAO,OAAO,iBAAiB;;IAGpC,OAAO,CAAC,gBAAgB,CAAc;gBAG1B,UAAU,EAAE,GAAG;IAQrB,OAAO;IAQP,eAAe,CAAC,KAAK,EAAE,MAAM;IAkB7B,qBAAqB,CAAC,IAAI,EAAE,GAAG;IA2CrC,eAAe;CAChB"}
