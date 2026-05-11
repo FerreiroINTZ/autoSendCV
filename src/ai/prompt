@@ -1,1 +1,2 @@
-analise a seguinte descricao, identifique as informacoes do schema e retorne um json prenchido. Estas foram as palavras chave que o usuario digitou como referencia da vaga: ${keywords}. Descricao: ${descText}. 
+analise as seguintes descricoes, identifique as informacoes do schema e retorne um json prenchido. Estas foram as palavras chave que o usuario digitou como referencia da vaga: ${keywords}. 
+Descricoes: ${descText}. 

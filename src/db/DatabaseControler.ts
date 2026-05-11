@@ -42,41 +42,49 @@ export default class DatabaseControler {
 
   // transformar em uma transaction
   // para deixar de gerenciar diretamente as descricoes
-  async saveVacancyOnDataBase(data: any) {
+  async saveVacancyOnDataBase(
+    generalData: any[],
+    // aiData: any[],
+    // descriptions: any[]
+  ) {
     try {
-      console.log(Object.keys(data))
+      console.log(Object.keys(generalData))
       const query = await this.#conn.$transaction(async tx =>{
-        await tx.vagas.create({
+        for await(let singleData of generalData){
+          await tx.vagas.create({
           data:{
-            titulo: data.title,
-            empresa: data.empresa,
-            cidade: data.cidade,
-            keywords: data.keywords,
-            plataforma: data.site,
-            link: data.currentUrl,
-            modalidade: data.macthModalidade,
-            dt_publicacao: data.dt_publicado,
-            area: data?.area,
-            salario: String(data?.salario),
+            titulo: singleData.titulo,
+            empresa: singleData.empresa,
+            cidade: singleData.cidade,
+            keywords: singleData.keywords,
+            plataforma: singleData.plataforma,
+            jobid: singleData.jobid,
+            link: singleData.link,
+            modalidade: singleData.modalidade,
+            dt_publicacao: singleData.dt_publicacao,
+            area: singleData?.area,
+            salario: String(singleData?.salario),
             descricoes: {
               create: {
-                descricao: data.descricao,
+                descricao: singleData.descricao,
               }
             },
             ai_analysis: {
               create: {
-                paridade: data?.paridade,
-                justificativa: data?.justificativa,
-                matches: data?.matches,
-                requisitos: data?.requisitos,
-                summary: data?.summary,
-                weaknesses: data?.weaknesses
+                paridade: singleData?.paridade,
+                justificativa: singleData?.justificativa,
+                matches: singleData?.matches,
+                requisitos: singleData?.requisitos,
+                summary: singleData?.summary,
+                weaknesses: singleData?.weaknesses
               }
             }
           }
         })
+        }
+        
     });
-      console.log("\x1b[32m Salvo no Banco! \x1b[0m ", `${data.paridade ? data.paridade : 0}/4`);
+      // console.log("\x1b[32m Salvo no Banco! \x1b[0m ", `${data.paridade ? data.paridade : 0}/4`);
     } catch (e) {
       console.log(e);
       // se falhar ele apaga a descricao, pra ela nao ficar sozinha

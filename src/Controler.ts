@@ -100,13 +100,16 @@ class Controler extends Configurator{
         //     // await pagingElements[1].click()
         // }
 
+        const datas = []
+        const descriptions: {jobId: string, descricao: string}[] = []
+
         for await (const item of elements){
             
-        //     // lista quantos ja foram em comparacao aos que faltam
-            process.stdout.write(`${qtd}/${elements.length}`)
+            // lista quantos ja foram em comparacao aos que faltam
+            process.stdout.write(`${String(qtd).padStart(2, "0")}/${elements.length}`)
             qtd++
 
-        //     // scrolla ate o elemento atual
+            // scrolla ate o elemento atual
             await this.#driver.executeScript("arguments[0].scrollIntoView()", item)
             await item.click()
             const mainElementsTag = await item.findElements(By.css(":scope > div > div > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div"))
@@ -139,6 +142,23 @@ class Controler extends Configurator{
             const dt_publicado = await this.modules.utils.getANDTranformPublishedDate()
             // pega a descricao, e os requisitos com IA
             const descricao = await this.modules.utils.getDescriptionsInfos()
+
+            const dadosGerais = {
+                jobid: jobId, // serra usado para colocar a descricao no respectivo lugar
+                titulo: title,
+                empresa,
+                cidade: regiao,
+                keywords: this.#configs.keywords,
+                plataforma: this.#configs.site,
+                link: currentUrl,
+                modalidade: macthModalidade,
+                dt_publicacao: dt_publicado,
+            }
+            descriptions.push({jobId: String(jobId), descricao})
+            datas.push(dadosGerais)
+            console.log("\n")
+
+            continue
 
             const aiResponse = 
             await this.modules.ai.askAiForGetDescriptionDetais(
@@ -184,6 +204,42 @@ class Controler extends Configurator{
             // salva no banco
             await this.modules.db.saveVacancyOnDataBase(data)
     }
+    console.log("Ia analisando ✨...")
+    const resp = await this.modules.ai.askAiForGetDescriptionDetais(
+        descriptions, 
+        this.#configs.keywords, 
+        this.#configs.otherAiCriterions)
+    if(resp == false){
+        console.error("Erro ao analisar com a IA")
+        return 
+    }
+
+    const finalData = datas.map(x =>{
+        const respectiveAiAnalysis = 
+            resp.filter((y: any) => x.jobid == y.jobId)[0]
+        const respectiveDescription = 
+            descriptions.filter(h => x.jobid == h.jobId)[0]
+
+        return {
+            ...x, 
+            salario: String(respectiveAiAnalysis.salario), 
+            ...respectiveAiAnalysis,
+            descricao: respectiveDescription!.descricao,
+        }
+    })
+    // const aiFormated = resp.map((x: any) =>{
+    //     delete x.area
+    //     delete x.salario
+    //     const newAIData = {...x, }
+    //     return x
+    // })
+    console.log("Salvando no Banco 🌐...")
+    await this.modules.db.saveVacancyOnDataBase(
+        finalData, 
+        // aiFormated, 
+        // descriptions
+    )
+
     console.log("\x1b[1;35mTerminou!")
     }
 

@@ -83,7 +83,7 @@ export default class AIControler{
 
     // retornar os dados, mas se a IA nao analisar retorna false, e fora daq ha uma validacao que nao permite a IA analisar mais as vagas
     async askAiForGetDescriptionDetais(
-        descText: string, 
+        descText: {jobId: string, desciption: string}[], 
         keyWords: string[],
         otherInfos: string){
         
@@ -98,8 +98,10 @@ export default class AIControler{
         const keywordsFormated = keyWords.join("; ")
         const promptFormated = readPrompt
             .replace(/\${keywords}/, keywordsFormated)
-            .replace(/\${descText}/, descText) + otherInfos
+            .replace(/\${descText}/, JSON.stringify(descText)) + otherInfos
         
+        // console.log("Prompt Formated")
+        // console.log(promptFormated)
         try{
 
             const resp = await this.#ai.models.generateContent({
@@ -117,7 +119,8 @@ export default class AIControler{
             return json
         }catch(e: any){
             const msg = JSON.parse(e.message).error.message
-            // console.log(msg)
+            console.log(msg)
+            return false
             if(msg.includes("You exceeded")){
                 console.log("tokens maximos atingidos para: ", this.#current_ai_model.nome)
                 
