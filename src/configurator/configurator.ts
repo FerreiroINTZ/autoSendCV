@@ -110,7 +110,18 @@ class ControlerConfigurator{
                 regiao: `//*[@id="ember154"]/ul/li/span`,
                 vacancyDescriptionTag: `//*[@id="job-details"]/div/p`,
                 publishDate: '//*[@id="main"]/div/div[2]/div[2]/div/div[2]/div/div[2]/div[1]/div/div[1]/div/div[1]/div/div[3]/div/span',
-                pagingTag: '/html/body/div[5]/div[3]/div[4]/div/div/main/div/div[2]/div[1]/div/div[2]/div[2]/ul'
+                pagingTag: (site: string): string => {
+                    switch (site) {
+                        case "linkedin":
+                                // usa arrray pra achar
+                                return 'button[data-testid]'
+                        case "indeed":
+                            // usa um query selector simples
+                            return 'a[aria-label="Próxima página"'
+                        default:
+                            return ""
+                    }
+                }   
             },
             indeed: {
                 lista: ``,

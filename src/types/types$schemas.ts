@@ -1,6 +1,5 @@
-import {optional, z} from "zod"
+import {z} from "zod"
 import {GoogleGenAI} from "@google/genai"
-import { _max } from "zod/v4/core"
 
 // isso cria um Enum
 // isso precisa virar um tipo como um Enum, e nao um array
@@ -77,7 +76,7 @@ export type Elements = {
     regiao: string,
     vacancyDescriptionTag: string,
     publishDate: string,
-    pagingTag: string
+    pagingTag: (site: string) => string
 }
 
 // ================ Description Schema
