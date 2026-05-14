@@ -28,7 +28,7 @@ async function main(){
         keywords: ["front-end", "back-end", "full-stack", "node", "JavaScript", "React", "Nextjs", "Postgres", "TypeScript", "Nest"],
         aiRequired: false,
         otherAiCriterions: "A vaga pecisa ser no horario depois das 13:00, pois de manah tenho faculdade.",
-        paginas: 10
+        paginas: 25
     }
 
     const controler = new Contoler({dbConn, userConfigs, driver})

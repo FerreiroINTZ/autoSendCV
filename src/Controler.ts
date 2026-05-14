@@ -72,9 +72,9 @@ class Controler extends Configurator {
         url = new URL(url);
         url.searchParams.set("start", `${pagina * 25}`);
         url = url.toString();
-        console.log(url);
+        // console.log(url);
         await this.#driver.get(url);
-        console.log("continua");
+        // console.log("continua");
       }
 
     // pega a lista <ul>
@@ -130,6 +130,8 @@ class Controler extends Configurator {
         if (existance) {
           console.log("\x1b[33m Ja existe essa vaga! \x1b[0m \n");
           continue;
+        }else{
+          console.log("\x1b[32m Vaga Nova! \x1b[0m")
         }
 
         let title = await mainElementsTag[0]!.getText();
@@ -221,7 +223,8 @@ class Controler extends Configurator {
         this.#configs.otherAiCriterions,
       );
       if (resp == false) {
-        console.error("Erro ao analisar com a IA");
+        // console.error("Erro ao analisar com a IA");
+        console.log("Todas as cotas foram exedidas!")
         return;
       }
 
@@ -240,12 +243,6 @@ class Controler extends Configurator {
             descricao: respectiveDescription!.descricao,
         };
     });
-    // const aiFormated = resp.map((x: any) =>{
-        //     delete x.area
-        //     delete x.salario
-        //     const newAIData = {...x, }
-        //     return x
-      // })
       console.log("Salvando no Banco 🌐...");
       await this.modules.db.saveVacancyOnDataBase(
           finalData,

@@ -7,11 +7,14 @@ import {
 } from "../types/types$schemas"
 export default class AIControler{
     #ai: GoogleGenAI
+    #maxTries = 10
+    
 
     #ai_models: {name: AiModels, isUsable: boolean}[] = modelsAvailable.map((x: AiModels) => ({name: x, isUsable: true}))
     #current_ai_model: {nome: AiModels, indx: number} = {
         nome: this.#ai_models[0]!.name,
-        indx: 0
+        indx: 0 // indice atual dos modelos
+        // sera usado paa acessar os modelos no #ai_models
     }
     #isUsable = true
 
@@ -23,53 +26,40 @@ export default class AIControler{
     }
 
     changeAiModel(
-        descText: string, 
+        descText: {jobId: string, description: string}[], 
         keyWords: string[], 
         otherInfos: string
-    ): void{
+    ): any{
 
         // invalida o modelo atual
         this.#ai_models[this.#current_ai_model.indx]!.isUsable = false
 
         // verifica se o modelo atual e o ultimo
         // pois, se for, ele invalida o uso da IA para a pesquisa
+        // caso o modelo seja o ultimo e entrar aqui, e por que a cota dela foi esgotada, entao ele verifica se este e ultimo, e desabilita a IA
         if(this.#ai_models.length == this.#current_ai_model.indx + 1){
             // console.log("\x1b[32m inutilizavel! \x1b[0m")
             this.#isUsable = false
-            return 
+            return false
         }
 
-        // busca o proximo modelo usavel disponivel
+        // busca o indice do proximo modelo usavel disponivel
         const currUsable = this.#ai_models.findIndex((element, index) =>{
             if(element.isUsable){
                 return true
             }
         })
-        
-        
-        // console.log(this.#ai_models[currUsable])
-        // console.log(currUsable)
-        // console.log(this.#current_ai_model)
-        // console.log(this.#ai_models)
 
+        // atribue o modelo atual como o elemento do indice achado
         this.#current_ai_model = {
             nome: this.#ai_models[currUsable]!.name,
             indx: currUsable
         }
 
-        // console.log("Curr Index")
-        // console.log(currUsable)
-        // console.log(this.#ai_models.length == this.#current_ai_model.indx + 1)
-
-        // console.log(currUsable)
-        // console.log("Current Model: ")
-        // console.log(this.#current_ai_model.nome)
-
-        // console.log("Modelo novo: ")
-
         // tenta de novo
         console.log("modelo mudado!")
-        this.askAiForGetDescriptionDetais(descText, keyWords, otherInfos)
+        this.#maxTries = 10
+        return this.askAiForGetDescriptionDetais(descText, keyWords, otherInfos)
     }
 
     // teste se a chave da API e valida
@@ -81,11 +71,27 @@ export default class AIControler{
         }
     }
 
+    // replica o comportamento da API
+    async aiMockReturn(){
+        const data = {
+            salario: 0,
+            area: "nenhuma",
+            paridade: 3,
+            justificativa: "slw",
+            requisitos: ["valor 1", "valor 2"],
+            matches: ["match 1", "match 2"],
+            weaknesses: ["tudo", "nada"],
+            summary: "sumarry",
+            jobId: "0123456789"
+        }
+        return data
+    }
+
     // retornar os dados, mas se a IA nao analisar retorna false, e fora daq ha uma validacao que nao permite a IA analisar mais as vagas
     async askAiForGetDescriptionDetais(
-        descText: {jobId: string, desciption: string}[], 
+        descText: {jobId: string, description: string}[], 
         keyWords: string[],
-        otherInfos: string){
+        otherInfos: string): Promise<any>{
         
         // se nao for usavel ele retornar false
         if(!this.#isUsable){
@@ -120,18 +126,40 @@ export default class AIControler{
         }catch(e: any){
             const msg = JSON.parse(e.message).error.message
             console.log(msg)
-            return false
             if(msg.includes("You exceeded")){
                 console.log("tokens maximos atingidos para: ", this.#current_ai_model.nome)
                 
                 // nao retorna nada
                 // apenas muda o modelo, ou define como nao usavel a IA
-                this.changeAiModel(descText, keyWords, otherInfos)
-                console.log(msg)
-                if(!this.#isUsable){
+                const resp = this.changeAiModel(descText, keyWords, otherInfos)
+                console.log("\x1b[1;31mCota exedida! \x1b[0m")
+                if(typeof resp == "boolean"){
                     return false
                 }
+
+                return resp
+                // if(!this.#isUsable){
+                //     return false
+                // }
             }
+            if(msg.includes("high demand")){
+                if(!this.#maxTries){
+                    return false
+                }
+                const wait = async () => new Promise((resolve) =>{
+                    setTimeout(() =>{
+                        resolve("resolvido!")
+                    }, 3000)
+                })
+                await wait()
+                this.#maxTries -= 1
+                return this.askAiForGetDescriptionDetais(
+                    descText, 
+                    keyWords, 
+                    otherInfos
+                )
+            }
+            throw new Error("Erro com a IA!")
             
             // colocar um log aqui que avisa que a cota foi exedida
             // fazer com que, ao execeder a cota, ele use outro modelo

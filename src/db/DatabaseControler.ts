@@ -48,7 +48,6 @@ export default class DatabaseControler {
     // descriptions: any[]
   ) {
     try {
-      console.log(Object.keys(generalData))
       const query = await this.#conn.$transaction(async tx =>{
         for await(let singleData of generalData){
           await tx.vagas.create({
