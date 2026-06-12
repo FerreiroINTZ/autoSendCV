@@ -29,8 +29,10 @@ export const UserConfigSchema = z.object({
     knowledge: z.array(z.string()).optional(),
     cidade: z.string().optional(),
     aiRequired: z.boolean().optional(),
+    minQtdToAnalise: z.number().optional().default(10),
 
-    otherAiCriterions: z.string().optional()
+    otherAiCriterions: z.string().optional(),
+    soundsEnabled: z.boolean().optional().default(false)
     // sao informacoes adicionais personalizadas que seram passadas para a IA usar como cireteio
 }).strict()
 
@@ -53,14 +55,20 @@ export const ConfigSchema = z.object({
     area: z.string().optional(),
     knowledge: z.array(z.string()).optional(),
     cidade: z.string().optional(),
+    minQtdToAnalise: z.number().optional().default(10),
     
     // se a analise da IA deve se robrigatoria
     aiRequired: z.boolean().optional(),
-    otherAiCriterions: z.string().optional()
+    otherAiCriterions: z.string().optional(),
+    soundsEnabled: z.boolean().optional().default(false)
 }).strict()
 
 export type Configuracao = z.infer<typeof ConfigSchema>
 
+const slw = z.object({
+    name: z.string(),
+    ...z.object(ConfigSchema)
+})
 
 type SiteDefaultConfigs = {
     host: string,
@@ -79,10 +87,10 @@ export type Elements = {
     pagingTag: (site: string) => string
 }
 
-// ================ Description Schema
+// ================ Description Schema =================
 // schema que a IA usara como base para prencher
 const DescriptionsSchema = z.object({
-    salario: z.number().optional().describe("o salario pago pela vaga"),
+    salario: z.number().optional().describe('o salario pago pela vaga (se nao tiver deixe uma string vazia "")'),
     area: z.string().describe("qual area a vaga faz parte, com base nas habilidades"),
     
     paridade: z.number().min(1).max(4).describe("um numero de 1 ate 4 que representa o quanto a vaga condiz com as palavras chave citadas no prompt. Sendo: 1, pessimo; 2, ruim; 3, bom; 4, perfeita "),

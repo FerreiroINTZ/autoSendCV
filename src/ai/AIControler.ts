@@ -5,6 +5,8 @@ import {
     AiModels,
     modelsAvailable
 } from "../types/types$schemas"
+import Utils from "../utils/utils"
+
 export default class AIControler{
     #ai: GoogleGenAI
     #maxTries = 10
@@ -110,6 +112,7 @@ export default class AIControler{
         // console.log(promptFormated)
         try{
 
+            if(this.#maxTries < 10) console.log("Pegando dados novamente!");
             const resp = await this.#ai.models.generateContent({
                 model: this.#current_ai_model.nome,
                 // melhorar o prompt
@@ -132,7 +135,7 @@ export default class AIControler{
                 // nao retorna nada
                 // apenas muda o modelo, ou define como nao usavel a IA
                 const resp = this.changeAiModel(descText, keyWords, otherInfos)
-                console.log("\x1b[1;31mCota exedida! \x1b[0m")
+                console.log("\x1b[31mCota exedida! \x1b[0m")
                 if(typeof resp == "boolean"){
                     return false
                 }
@@ -144,21 +147,23 @@ export default class AIControler{
             }
             if(msg.includes("high demand")){
                 if(!this.#maxTries){
+                    // muda o modelo, ao invez de parar o programa
+                    const resp = this.changeAiModel(descText, keyWords, otherInfos)
                     return false
                 }
-                const wait = async () => new Promise((resolve) =>{
-                    setTimeout(() =>{
-                        resolve("resolvido!")
-                    }, 3000)
-                })
-                await wait()
+
+                // colocar no utils
+                await Utils.waitTime(10, "sec")
+
                 this.#maxTries -= 1
+                console.log("Tentativa: ", this.#maxTries)
                 return this.askAiForGetDescriptionDetais(
                     descText, 
                     keyWords, 
                     otherInfos
                 )
             }
+            // se todas as cotas foram exedidas lanca um erro e quebra (para) a aplicacao
             throw new Error("Erro com a IA!")
             
             // colocar um log aqui que avisa que a cota foi exedida

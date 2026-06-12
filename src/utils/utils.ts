@@ -82,4 +82,23 @@ export default class ControlerUtils {
 
     return descText
   }
+
+  static async waitTime(time: number, mode: "sec" | "mili", showProgress: boolean = false){
+    const timeMultiplier = mode == "sec" ? 1000 : 100
+    let currentSecond = 1
+    const period = setInterval(() =>{
+      if(showProgress){
+        process.stdout.write(`\x1b[34m${currentSecond} \x1b[0m`)
+        currentSecond++
+      }
+    }, 1000)
+
+    const waitFunc = async () => new Promise((resolve) =>
+      setTimeout(() =>{
+        resolve("")
+        clearInterval(period)
+      }, time * timeMultiplier)
+    )
+    await waitFunc()
+  }
 }

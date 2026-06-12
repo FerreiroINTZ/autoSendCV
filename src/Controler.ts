@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { GoogleGenAI } from "@google/genai";
 import { WebDriver } from "selenium-webdriver/lib/webdriver";
+import {exec, execSync} from "child_process"
 
 import Configurator from "./configurator/configurator";
 import DataBaseContoler from "./db/DatabaseControler";
@@ -21,12 +22,17 @@ function composition(...clases: any[]) {
   for (let y = 0; y < clases.length; y++) {}
 }
 
+const modosDeAudio = ["end", "error", "save"] as const
+
+type Modes = typeof modosDeAudio[number]
+
 class Controler extends Configurator {
   #driver: WebDriver;
   #elements: Elements;
   #configs: Configuracao;
 
   constructor(data: { dbConn: any; userConfigs: Configuracao; driver: any }) {
+
     // faz as verificacoes basicas
     Configurator.basicVerificantionsOfUserConfigParam(data);
 
@@ -63,51 +69,145 @@ class Controler extends Configurator {
     // await this.doResearch()
   }
 
-  // new name: "start_to_get_vacancies"
-  async startToGetVacancies() {
+  getUnavailableTagOnLinkedin() {
+    const tag = document.getElementsByClassName("t-14");
+    let tags: any = [...tag];
+    const divs = tags.filter((x: Element) => {
+      if (x.tagName == "DIV" && x.classList.length == 1) {
+          return true;
+        }
+      })[0]
+      const spans = [...divs.querySelectorAll("span")]
+      const span = spans.filter((x: HTMLSpanElement) => {
+        console.log(x.innerText)
+        if (x.innerText.includes("aceita mais")) {
+          return true
+        }
+      });
+      return span
+  }
 
-    for await (const pagina of [...Array(this.#configs.paginas).keys()]) {
-      if (pagina > 0) {
-        let url: URL | string = await this.#driver.getCurrentUrl();
+  // verifica as vagas existetes para ver se tao disponiveis
+  async verifyVacancies(order: string = "desc") {
+    const vacanciesIds = await this.modules.db.getVacanciesToVerify(
+      this.#configs.paginas,
+    );
+
+    if(!vacanciesIds.length){
+      console.log("\x1b[33mNao ha vagas para serem analisadas! \x1b[0m")
+      return
+    }
+
+    let vagasIndisponiveis: string[] = [];
+    // return
+    for await (const vaga of [...Array(vacanciesIds.length).keys()]) {
+      const vacancy = vacanciesIds[vaga];
+      process.stdout.write(`${vaga + 1}/${vacanciesIds.length}: ${vacancy.jobid} `);
+      // console.log(vacancy)
+
+      await this.#driver.get(vacanciesIds[vaga].link);
+      try {
+        let stringFunc = this.getUnavailableTagOnLinkedin.toString()
+        stringFunc = `
+          let func = function ${stringFunc}
+          return func()  
+        `
+
+        const slw: any = await this.#driver.executeScript(stringFunc)
+        if(!slw.length){
+          throw new Error("Vaga encontrada encontrada")
+        }
+        vagasIndisponiveis.push(vacancy.jobid);
+        console.log("\x1b[31mVaga indisponivel! \x1b[0m");
+      } catch (e: any) {
+        // console.log(e)
+        // console.log(Object.keys(e))
+        // console.log(e.name)
+        console.log("\x1b[32m Vaga Disponivel! \x1b[0m");
+      }
+    }
+    console.log(vagasIndisponiveis);
+    console.log("\n")
+    console.log(vagasIndisponiveis)
+    console.log(`\x1b[31mVagas Indisponiveis:\x1b[0m ${vagasIndisponiveis.length}`)
+    console.log(`\x1b[32mVagas Disponiveis:\x1b[0m ${vacanciesIds.length - vagasIndisponiveis.length}`)
+    await this.modules.db.changeDisponibilidade({toSave: vagasIndisponiveis, all: vacanciesIds.map((x: any) => x.jobid)});
+    this.playAudios("end")
+  }
+
+  // colocar no Utils
+  playAudios(mode: Modes){
+    // if(!this.#configs.soundsEnabled){
+    //   return;
+    // }
+    if(mode == "end"){
+      execSync("play /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga vol 1 reverb speed .4 vol 1")
+    }if(mode == "error"){
+      execSync("play --volume .1 /usr/share/sounds/freedesktop/stereo/suspend-error.oga speed .5 reverb")
+    }
+    if(mode == "save"){
+      execSync("play /usr/share/sounds/freedesktop/stereo/service-login.oga speed .8 reverb")
+    }
+  }
+
+  // teste
+  async startTogetVacaciesV2(){
+    let vagas = []
+    let bucketsWisheds = 5
+    for(let i in [...Array(bucketsWisheds)]){
+      console.log(i)
+    }
+  }
+
+
+  async pageNavigation(pagina: number){
+    let url: URL | string = await this.#driver.getCurrentUrl();
         url = new URL(url);
         url.searchParams.set("start", `${pagina * 25}`);
         url = url.toString();
-        // console.log(url);
         await this.#driver.get(url);
-        // console.log("continua");
+  }
+
+  // new name: "start_to_get_vacancies"
+  // pega as vagas com base nas configs
+  async startToGetVacancies() {
+    let vacanciesListDatas = []; // contera os dados das vagas pegas
+    const descriptions: { jobId: string; descricao: string }[] = []; // somente a descricao da vaga
+    // teve que ser separado de "vacanciesListDatas" para facilitar seu uso com a IA.
+
+    for await (const pagina of [...Array(this.#configs.paginas).keys()]) {
+      if (pagina > 0) {
+        await this.pageNavigation(pagina)
       }
 
-    // pega a lista <ul>
-    const lista = await this.#driver.wait(
-      until.elementLocated(By.xpath(this.#elements.lista)),
-      20 * 1000,
-    );
+      // pega a lista <ul>
+      const lista = await this.#driver.wait(
+        until.elementLocated(By.xpath(this.#elements.lista)),
+        20 * 1000,
+      );
 
-    // <li>s
-    const elements = await lista.findElements(By.css(":scope > *"));
-    console.log("pegou a lista");
-    console.log(elements.length);
-    // return null
-    let qtd = 1;
-    const p = async () =>
-      new Promise((resolve) => {
-        setTimeout(() => {
-          resolve("resolvido");
-        }, 3000);
-      });
-
-
-    
-      const datas = [];
-      const descriptions: { jobId: string; descricao: string }[] = [];
+      // <li>s
+      const elements = await lista.findElements(By.css(":scope > *"));
+      console.log("pegou a lista");
+      console.log(elements.length);
+      // return null
+      let qtdVagasPegas = 1; // serve para mostrar os numeros de vagas pegas
+      const p = async () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve("resolvido");
+          }, 3000);
+        });
 
       for await (const item of elements) {
+
+        // da pra ir pro controller de UI (UI do terminal), ue futuramente existira
         // lista quantos ja foram em comparacao aos que faltam
-        console.log(
-          `Pagina: ${pagina + 1}/${this.#configs.paginas}`,
+        console.log(`Pagina: ${pagina + 1}/${this.#configs.paginas}`);
+        process.stdout.write(
+          `Vaga: ${String(qtdVagasPegas).padStart(2, "0")}/${elements.length}`,
         );
-        process.stdout.write(`Vaga: ${String(qtd).padStart(2, "0")}/${elements.length}`)
-        qtd++;
+        qtdVagasPegas++;
 
         // scrolla ate o elemento atual
         await this.#driver.executeScript("arguments[0].scrollIntoView()", item);
@@ -118,9 +218,9 @@ class Controler extends Configurator {
           ),
         );
 
-        //     // separar em outro metodo (verify on Data Base)
-        //     // para isso sera preciso instancias o "DatabaseControler" tambem
-        //     // (pendencia futura)
+        // separar em outro metodo (verify on Data Base)
+        // para isso sera preciso instancias o "DatabaseControler" tambem
+        // (pendencia futura)
         const currentUrl = await this.#driver.getCurrentUrl();
         const url = new URL(currentUrl).searchParams;
         const jobId = url.get("currentJobId");
@@ -129,9 +229,10 @@ class Controler extends Configurator {
         // se o titulo ja existir passa pro proximo
         if (existance) {
           console.log("\x1b[33m Ja existe essa vaga! \x1b[0m \n");
+          console.log(`Qtd Minima: \x1b[34m${vacanciesListDatas.length}/${this.#configs.minQtdToAnalise} \x1b[0m`)
           continue;
-        }else{
-          console.log("\x1b[32m Vaga Nova! \x1b[0m")
+        } else {
+          console.log("\x1b[32m Vaga Nova! \x1b[0m");
         }
 
         let title = await mainElementsTag[0]!.getText();
@@ -163,95 +264,75 @@ class Controler extends Configurator {
           dt_publicacao: dt_publicado,
         };
         descriptions.push({ jobId: String(jobId), descricao });
-        datas.push(dadosGerais);
+        vacanciesListDatas.push(dadosGerais);
+        console.log(`Qtd Minima: \x1b[34m${vacanciesListDatas.length}/${this.#configs.minQtdToAnalise} \x1b[0m`)
         console.log("\n");
+      }
 
-        continue;
+      // ============ fora do loop da pagina ==================
+        console.log("\x1b[2J \x1b[0;0H")
+        console.log(descriptions.length)
+        
+        // se nessa pagina tiver alguma vaga pega ele analisa
+        if (vacanciesListDatas.length > this.#configs.minQtdToAnalise) {
 
-        const aiResponse = await this.modules.ai.askAiForGetDescriptionDetais(
-          descricao,
+        console.log("Tamanho Total da String: ", descriptions.toString().length)
+        console.log("Tokens totais: ", descriptions.toString().length/4)
+        
+        console.log("Ia analisando ✨...");
+        const resp = await this.modules.ai.askAiForGetDescriptionDetais(
+          descriptions,
           this.#configs.keywords,
           this.#configs.otherAiCriterions,
         );
-        // criar um tipo para os dados recebidos, e verificar com o zod
-        // verificacao
 
-        // o return acaba com o loop e com a funcao
-        if (!aiResponse && this.#configs.aiRequired) {
-          console.log("\x1b[31m IA Indisponivel!");
-          return null;
+        // se as cotas foram exedidas para o codigo
+        if (resp == false) {
+          this.playAudios("error")
+          console.log("\x1b[1;31mTodas as cotas foram exedidas! \x1b0m");
+          return;
         }
 
-        if (aiResponse) {
-          console.log("IA Fora de alcance!");
-        }
+        console.log("\x1b[2J \x1b[0;0H")
 
-        const data: any = {
-          title,
-          empresa,
-          regiao,
-          descricao,
-          keywords: this.#configs.keywords,
-          site: this.#configs.site,
-          jobId,
-          currentUrl,
-          macthModalidade,
-          dt_publicado,
-          salario: aiResponse?.salario,
-          area: aiResponse?.area,
-
-          ...aiResponse,
-
-          // paridade: aiResponse?.paridade,
-          // justificativa: aiResponse?.justificativa,
-          // requisitos: aiResponse?.requisitos,
-          // matches: aiResponse?.matches,
-          // summary: aiResponse?.sumarry,
-          // weaknesses: aiResponse?.weaknesses,
-        };
-        // salva no banco
-        await this.modules.db.saveVacancyOnDataBase(data);
-      }
-
-      // se nessa paginna tiver alguma vaga pega ele analisa
-      if(descriptions.length){
-
-          console.log("Ia analisando ✨...");
-          const resp = await this.modules.ai.askAiForGetDescriptionDetais(
-        descriptions,
-        this.#configs.keywords,
-        this.#configs.otherAiCriterions,
-      );
-      if (resp == false) {
-        // console.error("Erro ao analisar com a IA");
-        console.log("Todas as cotas foram exedidas!")
-        return;
-      }
-
-      const finalData = datas.map((x) => {
-        const respectiveAiAnalysis = resp.filter(
+        // colocar no Utils
+        // isso junta a resposta da IA com os outros dados pegos
+        const finalData = vacanciesListDatas.map((x) => {
+          
+          // pega a analise da IA correpondente ao do map atual
+          const respectiveAiAnalysis = resp.filter(
             (y: any) => x.jobid == y.jobId,
-        )[0];
-        const respectiveDescription = descriptions.filter(
+          )[0];
+          // pega a descricao correpondente ao do map atual
+          const respectiveDescription = descriptions.filter(
             (h) => x.jobid == h.jobId,
-        )[0];
-        
-        return {
+          )[0];
+
+          // trata os dados pegos
+          if(respectiveAiAnalysis?.salario == undefined || respectiveAiAnalysis?.salario == null){
+            console.log(respectiveAiAnalysis)
+            console.log("Debug Salario")
+            console.log("\x1b[1;31m Salario invalido! \x1b[0m", respectiveAiAnalysis?.salario)
+          }
+          return {
             ...x,
-            salario: String(respectiveAiAnalysis.salario),
+            salario: respectiveAiAnalysis?.salario
+            ? `${respectiveAiAnalysis?.salario}`
+            : "",
             ...respectiveAiAnalysis,
             descricao: respectiveDescription!.descricao,
-        };
-    });
-      console.log("Salvando no Banco 🌐...");
-      await this.modules.db.saveVacancyOnDataBase(
+          };
+        });
+        console.log("Salvando no Banco 🌐...");
+        await this.modules.db.saveVacancyOnDataBase(
           finalData,
-          // aiFormated,
-          // descriptions
         );
-    }
+        vacanciesListDatas = []
+        this.playAudios("save")
+      }
     }
     console.log("\x1b[1;35mTerminou!");
+    this.playAudios("end")
   }
 
   getProperties() {

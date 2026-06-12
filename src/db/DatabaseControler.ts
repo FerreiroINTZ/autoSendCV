@@ -92,5 +92,61 @@ export default class DatabaseControler {
     }
   }
 
+  async getVacanciesToVerify(qtd: number){
+    const jobsIds = await this.#conn.vagas.findMany({
+      take: qtd,
+      select: {
+        jobid: true,
+        link: true,
+      },
+      where:{
+        plataforma: "linkedin",
+        disponibilidade: true,
+        last_disp_analysis: {
+          not: new Date()
+        }
+      }
+    })
+
+    return jobsIds
+
+  }
+
+  async changeDisponibilidade(vacanciesObj: {toSave: string[], all: string[]}){
+    const date = new Date()
+    const current_date = `${date.getFullYear()}-${date.getMonth()}-${date.getDay()}`
+    try{
+
+      await this.#conn.$transaction(async (tx) =>{
+        if(vacanciesObj.toSave.length){
+          await tx.vagas.updateMany({
+            where: {
+              jobid: {
+                in: vacanciesObj.toSave
+              }
+            },
+            data: {
+              disponibilidade: false,
+            }
+          })
+        }
+      await tx.vagas.updateMany({
+        where: {
+          jobid: {in: vacanciesObj.all}
+        },
+        data:{
+          last_disp_analysis: new Date()
+        }
+      })
+      })
+      console.log("\x1b[34mAlterado no Banco com Sucesso! \x1b[0m")
+      return true
+    }catch(e){
+      console.log(e)
+      console.log("\x1b[31mErro ao mudar no Banco! \x1b[0m")
+      return false
+    }
+  }
+
   saveDescription() {}
 }
